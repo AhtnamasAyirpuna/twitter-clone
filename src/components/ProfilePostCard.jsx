@@ -46,7 +46,7 @@ export default function ProfilePostCard({ content, postId }) {
     
       // Prepare comment data
       const data = {
-        commentary: newComment,
+        content: newComment,
         post_id: postId, // ✅ postId, not userId
       };
     
