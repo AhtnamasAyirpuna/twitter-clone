@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Col, Image, Row } from 'react-bootstrap';
+import { jwtDecode } from 'jwt-decode';
 
-export default function ProfilePostCard({ content, postId }) {
+export default function ProfilePostCard({ content, postId, initialLikes }) {
 //  Add two state variables:
 //  likes → holds the number of likes.
 //  liked → tracks if the user has liked the post.
@@ -17,19 +18,26 @@ export default function ProfilePostCard({ content, postId }) {
 
   //Fetch total likes for the post
     useEffect(() => {
+      const token = localStorage.getItem("authToken");
+      const decoded = token ? jwtDecode(token) : null;
+
       axios.get(
         `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/post/${postId}`
       )
-        .then((response) => {
-          setLikes(response.data.length);
+      .then((response) => {
+        setLikes(response.data.length);
+        if (decoded) {
+          const userLiked = response.data.some(like => like.user_id === decoded.id);
+          setLiked(userLiked);
+        }
       })
-        .catch((error) => console.error('Error fetching likes:', error));
-    }, [postId]);
+      .catch((error) => console.error("Error fetching likes:", error));
+  }, [postId]);
 
     // On component mount, fetch all comments for the current post (GET /comments/:id).
     useEffect(() => {
       axios.get(
-        `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/comments/${postId}`
+        `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/comments/post/${postId}`
       )
         .then((response) => {
           setComments(response.data);
@@ -70,6 +78,32 @@ export default function ProfilePostCard({ content, postId }) {
       }
     };
 
+    const handleLike = async () => {
+      const token = localStorage.getItem("authToken");
+        if (!token) {
+          alert("You must be logged in to like a post");
+        return;
+        }
+
+      setLiked(true);
+      setLikes((prev) => prev + 1);
+  
+      try {
+        await axios.post(
+          'https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes',
+          { post_id: postId },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+      } catch (error) {
+        console.error('Error liking post:', error);
+        // Rollback on failure
+        setLiked(false);
+        setLikes((prev) => Math.max(prev - 1, 0));
+      }
+    };
+
     // Create a handleUnlike function that:
   const handleUnlike = async() => {
     try {
@@ -83,7 +117,7 @@ export default function ProfilePostCard({ content, postId }) {
     // Sends a DELETE request to /likes/:postId.  
     await axios
       .delete(
-        `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/likes/${postId}`,
+        `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
         {
           headers: {Authorization: `Bearer ${token}`},
         }
@@ -99,39 +133,6 @@ export default function ProfilePostCard({ content, postId }) {
         console.error('Error unliking post:', error);
       }
   };
-
-
-    //handleLike backend not done yet
-  const handleLike = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('You must be logged in to like a post');
-        return;
-      }
-  
-      // Optimistically update UI
-      setLiked(true);
-      setLikes((prevLikes) => prevLikes + 1);
-  
-      // Send POST request
-      await axios.post(
-        `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/likes/${postId}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log('Post liked successfully');
-    } catch (error) {
-      console.error('Error liking post:', error);
-      // revert if failed
-      setLiked(false);
-      setLikes((prevLikes) => Math.max(prevLikes - 1, 0));
-    }
-  };
-  
-
-
 
   return (
     <Row
