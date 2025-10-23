@@ -29,6 +29,8 @@ export default function ProfilePostCard({ content, postId, initialLikes }) {
         if (decoded) {
           const userLiked = response.data.some(like => like.user_id === decoded.id);
           setLiked(userLiked);
+        } else {
+          setLiked(false);
         }
       })
       .catch((error) => console.error("Error fetching likes:", error));
@@ -78,61 +80,63 @@ export default function ProfilePostCard({ content, postId, initialLikes }) {
       }
     };
 
-    const handleLike = async () => {
+    const handleToggleLike = async () => {
       const token = localStorage.getItem("authToken");
-        if (!token) {
-          alert("You must be logged in to like a post");
+      if (!token) {
+        alert("You must be logged in to like a post");
         return;
-        }
-
-      setLiked(true);
-      setLikes((prev) => prev + 1);
-  
+      }
+    
+      // optimistic UI update
+      setLiked(prev => !prev);
+      setLikes(prev => (liked ? Math.max(prev - 1, 0) : prev + 1));
+    
       try {
-        await axios.post(
-          'https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes',
-          { post_id: postId },
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+        const res = await axios.post(
+          `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+        // Use real server response to ensure state is correct
+        if (res.data && typeof res.data.liked !== 'undefined') {
+          setLiked(res.data.liked);
+          setLikes(prev => {
+            // adjust likes to server truth (simple approach)
+            return res.data.liked ? prev + 0 : Math.max(prev - 0, 0);
+          });
+        }
       } catch (error) {
-        console.error('Error liking post:', error);
-        // Rollback on failure
-        setLiked(false);
-        setLikes((prev) => Math.max(prev - 1, 0));
+        console.error("Error toggling like:", error);
+        // rollback
+        setLiked(prev => !prev);
+        setLikes(prev => (liked ? prev + 1 : Math.max(prev - 1, 0)));
       }
     };
 
     // Create a handleUnlike function that:
-  const handleUnlike = async() => {
-    try {
-      // Includes the JWT token from localStorage in the Authorization header.
+    const handleUnlike = async () => {
       const token = localStorage.getItem('authToken');
       if (!token) {
         alert('You must be logged in to unlike a post');
         return;
       }
-
-    // Sends a DELETE request to /likes/:postId.  
-    await axios
-      .delete(
-        `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        }
-      );
-
-      // Immediately decreases likes by 1 and sets liked to false (optimistic update).
+    
+      // optimistic
       setLiked(false);
-      setLikes((prevLikes) => Math.max(prevLikes - 1, 0));
-
-      console.log('Post unliked successfully');
-
-      } catch(error) {
+      setLikes(prev => Math.max(prev - 1, 0));
+    
+      try {
+        await axios.delete(
+          `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (error) {
         console.error('Error unliking post:', error);
+        // rollback
+        setLiked(true);
+        setLikes(prev => prev + 1);
       }
-  };
+    };    
 
   return (
     <Row
@@ -176,10 +180,8 @@ export default function ProfilePostCard({ content, postId, initialLikes }) {
           <Button variant="light">
             <i className="bi bi-repeat"></i>
           </Button>
-          <Button variant="light" onClick={liked ? handleUnlike : handleLike}>
-          <i
-            className={`bi ${liked ? 'bi-heart-fill text-danger' : 'bi-heart'}`}
-            ></i>{' '}
+          <Button variant="light" onClick={handleToggleLike}>
+            <i className={`bi ${liked ? 'bi-heart-fill text-danger' : 'bi-heart'}`}></i>{' '}
             {likes}
           </Button>
           <Button variant="light">
