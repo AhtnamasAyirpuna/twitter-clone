@@ -9,9 +9,9 @@ export default function NewPostModal({ show, handleClose }) {
 
   const handleSave = () => {
     dispatch(savePost(postContent));
-    setPostContent("");
+    setPostContent();
     handleClose();
-  }
+  };
   
   return (
     <>

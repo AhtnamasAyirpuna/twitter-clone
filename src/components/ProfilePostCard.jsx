@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export default function ProfilePostCard({ content, postId }) {
 //  likes → holds the number of likes.
-  const [likes, setLikes] = useState(0);
+  const [likes, setLikes] = useState([]);
 
   //Decoding to get the userID
   const token = localStorage.getItem("authToken");
@@ -25,111 +25,33 @@ export default function ProfilePostCard({ content, postId }) {
       .catch((error) => console.error("Error:", error));
   }, [postId]);
 
-    const isLiked = likes.some((like) => likes.user_id === userId);
+    const isLiked = likes.some((like) => like.user_id === userId);
 
+    const handleLike = () => (isLiked? removeFromLikes() : addToLikes());
 
-    //Must change somemore, follow the slide
-    // On component mount, fetch all comments for the current post (GET /comments/:id).
-    useEffect(() => {
-      axios.get(
-        `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/comments/post/${postId}`
-      )
-        .then((response) => {
-          setComments(response.data);
+    const addToLikes = () => {
+      axios.post(`${BASE_URL}/likes`, {
+        user_id: userId,
+        post_id: postId,
       })
-        .catch((error) => console.error('Error fetching comments:', error));
-    }, [postId]);
+      .then((response) => {
+        setLikes([...likes, {...response.data, likes_id: response.data.id}])
+      })
+      .catch((error) => console.error("Error:", error))
+    }
 
-    const handleAddComment = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("You must be logged in to add a comment");
-        return;
-      }
-    
-      // Prepare comment data
-      const data = {
-        content: newComment,
-        post_id: postId, // ✅ postId, not userId
-      };
-    
-      // Optimistic update
-      const tempComment = { commentary: newComment };
-      setComments((prev) => [...prev, tempComment]);
-      setNewComment("");
-    
-      try {
-        await axios.post(
-          `https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev/comments`,
-          data,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } catch (error) {
-        console.error("Error adding comment:", error);
-        // rollback if failed
-        setComments((prev) =>
-          prev.filter((c) => c !== tempComment)
-        );
+    const removeFromLikes = () => {
+      const like = likes.find((like) => like.user_id === userId);
+      if (like) {
+        axios
+        .put(`${BASE_URL}/likes/${userId}/${postId}`) // Include userId and postId in the url
+        .then(() => {
+          //update the state to reflect the removal of the like
+          setLikes(likes.filter((likeItem) => likeItem.user_id !== userId));
+        })
+        .catch((error) => console.error("Error:", error));
       }
     };
-
-    const handleToggleLike = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("You must be logged in to like a post");
-        return;
-      }
-    
-      // optimistic UI update
-      setLiked(prev => !prev);
-      setLikes(prev => (liked ? Math.max(prev - 1, 0) : prev + 1));
-    
-      try {
-        const res = await axios.post(
-          `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        // Use real server response to ensure state is correct
-        if (res.data && typeof res.data.liked !== 'undefined') {
-          setLiked(res.data.liked);
-          setLikes(prev => {
-            // adjust likes to server truth (simple approach)
-            return res.data.liked ? prev + 0 : Math.max(prev - 0, 0);
-          });
-        }
-      } catch (error) {
-        console.error("Error toggling like:", error);
-        // rollback
-        setLiked(prev => !prev);
-        setLikes(prev => (liked ? prev + 1 : Math.max(prev - 1, 0)));
-      }
-    };
-
-    // Create a handleUnlike function that:
-    const handleUnlike = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('You must be logged in to unlike a post');
-        return;
-      }
-    
-      // optimistic
-      setLiked(false);
-      setLikes(prev => Math.max(prev - 1, 0));
-    
-      try {
-        await axios.delete(
-          `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/${postId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } catch (error) {
-        console.error('Error unliking post:', error);
-        // rollback
-        setLiked(true);
-        setLikes(prev => prev + 1);
-      }
-    };    
 
   return (
     <Row
@@ -147,25 +69,6 @@ export default function ProfilePostCard({ content, postId }) {
         <strong>Samantha</strong>
         <span> @samantha.anupriya · Aug 9</span>
         <p>{content}</p>
-        <div className="mt-3">
-            <h6>Comments:</h6>
-            {comments.map((comment, index) => (
-              <p key={index}>{comment.commentary}</p>
-            ))}
-
-          <div className="d-flex mt-2">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a comment..."
-                className="form-control me-2"
-              />
-              <Button variant="primary" onClick={handleAddComment}>
-                Add
-              </Button>
-          </div>
-        </div>
         <div className="d-flex justify-content-between">
           <Button variant="light">
             <i className="bi bi-chat"></i>
@@ -173,9 +76,13 @@ export default function ProfilePostCard({ content, postId }) {
           <Button variant="light">
             <i className="bi bi-repeat"></i>
           </Button>
-          <Button variant="light" onClick={handleToggleLike}>
-            <i className={`bi ${liked ? 'bi-heart-fill text-danger' : 'bi-heart'}`}></i>{' '}
-            {likes}
+          <Button variant="light" onClick={handleLike}>
+            {isLiked ? (
+              <i className='bi bi-heart-fill text-danger'></i>
+            ) : (
+              <i className='bi bi-heart'></i>
+            )}
+            {likes.length}
           </Button>
           <Button variant="light">
             <i className="bi bi-graph-up"></i>
