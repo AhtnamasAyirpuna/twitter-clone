@@ -1,6 +1,6 @@
-import {createAsyncThunk, createSlice} from '@reduxjs@toolkit';
+import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 
-const BASE_URL = 'api url';
+const BASE_URL = 'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev';
 
 //Async thunk for fetching user's posts
 export const fetchPostsByUser = createAsyncThunk(
