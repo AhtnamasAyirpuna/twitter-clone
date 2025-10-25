@@ -93,7 +93,7 @@ export default function ProfileMidBody() {
         <Spinner animation="border" className='ms-3 mt-3' variant="primary" />
       )}
       {/*posts = [{id: 4, content: 'sigma school'}] */}
-      {posts.map((post) => (
+      {posts.length > 0 && posts.map((post) => (
           //post = {id: 4, content: 'sigma school'}
           <ProfilePostCard
             key={post.id}

@@ -4,38 +4,31 @@ import axios from 'axios';
 import { Button, Col, Image, Row } from 'react-bootstrap';
 import { jwtDecode } from 'jwt-decode';
 
-export default function ProfilePostCard({ content, postId, initialLikes }) {
-//  Add two state variables:
+export default function ProfilePostCard({ content, postId }) {
 //  likes → holds the number of likes.
-//  liked → tracks if the user has liked the post.
   const [likes, setLikes] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [comments, setComments] = useState([]); //Add a local state variable comments (array) and newComment (string).
-  const [newComment, setNewComment] = useState("");
+
+  //Decoding to get the userID
+  const token = localStorage.getItem("authToken");
+  const decode = jwtDecode(token)
+  const userId = decode.id;
 
   const pic =
     'https://pbs.twimg.com/profile_images/1587405892437221376/h167Jlb2_400x400.jpg';
+  const BASE_URL = "https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev"
 
-  //Fetch total likes for the post
+  
     useEffect(() => {
-      const token = localStorage.getItem("authToken");
-      const decoded = token ? jwtDecode(token) : null;
-
-      axios.get(
-        `https://175832dd-90fa-44eb-84b2-8a283f365570-00-14fzj9uhfh1kr.pike.replit.dev/likes/post/${postId}`
-      )
-      .then((response) => {
-        setLikes(response.data.length);
-        if (decoded) {
-          const userLiked = response.data.some(like => like.user_id === decoded.id);
-          setLiked(userLiked);
-        } else {
-          setLiked(false);
-        }
-      })
-      .catch((error) => console.error("Error fetching likes:", error));
+      fetch(`${BASE_URL}/likes/post/${postId}`)
+      .then((response) => response.json())
+      .then((data) => setLikes(data))
+      .catch((error) => console.error("Error:", error));
   }, [postId]);
 
+    const isLiked = likes.some((like) => likes.user_id === userId);
+
+
+    //Must change somemore, follow the slide
     // On component mount, fetch all comments for the current post (GET /comments/:id).
     useEffect(() => {
       axios.get(
