@@ -1,15 +1,21 @@
-import { Button, Col, Image, Nav, Row, Spinner } from 'react-bootstrap';
+import { Button, Col, Image, Nav, Row, Spinner, Form } from 'react-bootstrap';
 import ProfilePostCard from './ProfilePostCard';
 import { jwtDecode } from 'jwt-decode';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {useDispatch, useSelector} from "react-redux";
+import axios from "axios";
 import { fetchPostsByUser } from '../features/posts/postsSlice';
 
 export default function ProfileMidBody() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
   const url =
     'https://pbs.twimg.com/profile_banners/83072625/1602845571/1500x500';
   const pic =
     'https://pbs.twimg.com/profile_images/1587405892437221376/h167Jlb2_400x400.jpg';
+  const BASE_URL = 'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev';
 
     const dispatch = useDispatch()
     const posts = useSelector(store => store.posts.posts)
@@ -28,8 +34,38 @@ export default function ProfileMidBody() {
     }
   }, [dispatch]);
 
+  const handleSubmit = async(e) =>{
+    e.preventDefault();
+    if (!searchTerm.trim()) return; //if nothing is typed, stop the function
+    setSearching(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/posts/search?q=${searchTerm}`);
+      setSearchResults(response.data);
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const postsToDisplay = searchTerm ? searchResults : posts;
+
   return (
     <Col sm={6} className="bg-light" style={{ border: '1px solid lightgrey' }}>
+      <Form onSubmit={handleSubmit} className='p-2'>
+            <Form.Group controlId="searchTerm">
+              <Form.Control
+                placeholder="Search"
+                value = {searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Form.Group>
+      </Form>
+
+      {searching && (
+        <Spinner animation="border" className='ms-3 mt-3' variant='primary'/>
+      )}
+
       <Image src={url} fluid />
       <br />
       <Image
@@ -93,7 +129,7 @@ export default function ProfileMidBody() {
         <Spinner animation="border" className='ms-3 mt-3' variant="primary" />
       )}
       {/*posts = [{id: 4, content: 'sigma school'}] */}
-      {posts.length > 0 && posts.map((post) => (
+      {postsToDisplay.length > 0 && postsToDisplay.map((post) => (
           //post = {id: 4, content: 'sigma school'}
           <ProfilePostCard
             key={post.id}
