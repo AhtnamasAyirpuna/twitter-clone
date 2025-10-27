@@ -6,7 +6,7 @@ const BASE_URL = 'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.
 export const searchUsers = createAsyncThunk(
     "users/searchUsers",
     async (term) => {
-        const response = await fetch (`${BASE_URL}/search?q=${term}`);
+        const response = await fetch (`${BASE_URL}/search?q=${encodeURIComponent(term)}`);
         return response.json(); 
     }
 );
