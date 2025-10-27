@@ -61,13 +61,22 @@ export default function SearchBar() {
             >
               {results.map((item) => (
                 <ListGroup.Item
-                  key={item.id}
-                  action
-                  onClick={() => handleItemClick(item)}
+                    key={item.id}
+                    action
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                    if (term.startsWith("#")) {
+                        console.log("Hashtag clicked:", item.content);
+                    } else {
+                        console.log("Navigating to user profile:", item.username);
+                        navigate("/user-profile", { state: { user: item } });
+                    }
+                    }}
                 >
-                  {term.startsWith("#") ? item.content : item.username}
+                    {term.startsWith("#") ? item.content : `@${item.username}`}
                 </ListGroup.Item>
-              ))}
+            ))}
+
             </ListGroup>
           )}
         </div>
