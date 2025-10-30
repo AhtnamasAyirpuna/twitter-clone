@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 export default function UserProfile() {
-    ///DO THE PAGE BACK AGAIN - make it look like your profile page
   const location = useLocation();
   const userFromState = location.state?.user; // user passed from SearchBar
   const { profile, loading, error } = useSelector((state) => state.user);
