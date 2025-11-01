@@ -4,6 +4,7 @@ import ProfilePage from './pages/ProfilePage';
 import {Provider} from "react-redux";
 import store from "./store";
 import UserProfile from './components/UserProfile';
+import Feed from './components/Feed';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/login" element={<AuthPage />} />
           <Route path="*" element={<AuthPage />} />
           <Route path="/user-profile" element={<UserProfile />} />
+          <Route path="/feed" element={<Feed />} />
         </Routes>
       </BrowserRouter>
     </Provider>

@@ -5,14 +5,24 @@ const BASE_URL = 'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.
 
 export const fetchFeed = createAsyncThunk(
     "feed/fetchFeed",
-    async () => { 
-            const token = localStorage.getItem('authToken')
-            const response = await axios.get(`${BASE_URL}/feed`, {
-            headers: {Authorization: `Bearer ${token}`},
-        });
-            return response.data;    
+    async (_, { rejectWithValue }) => {
+      const token = localStorage.getItem("authToken");
+  
+      if (!token) return rejectWithValue("No token found in localStorage");
+  
+      const response = await fetch(`${BASE_URL}/feed`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return rejectWithValue(errorData.error || "Failed to fetch feed");
+      }
+  
+      return response.json();
     }
-);
+  );
+  
 
 export const followUser = createAsyncThunk(
     "feed/followUser",
