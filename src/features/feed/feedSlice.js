@@ -18,7 +18,7 @@ export const fetchFeed = createAsyncThunk(
         const errorData = await response.json().catch(() => ({}));
         return rejectWithValue(errorData.error || "Failed to fetch feed");
       }
-  
+      
       return response.json();
     }
   );
@@ -54,7 +54,7 @@ const feedSlice = createSlice({
     extraReducers: (builder) => {
         builder
         .addCase(fetchFeed.fulfilled, (state,action) => {
-            state.feed = action.payload;
+            state.feed = [...state.feed, ...action.payload.feed];
             state.loading = false; // to stop the loding animation
         })
         .addCase(fetchFeed.rejected, (state,action) => {
