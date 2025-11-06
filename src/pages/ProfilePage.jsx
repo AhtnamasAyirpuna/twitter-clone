@@ -1,23 +1,23 @@
 import { Container, Row } from 'react-bootstrap';
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useLocalStorage from 'use-local-storage';
 import ProfileSideBar from '../components/ProfileSideBar';
 import ProfileMidBody from '../components/ProfileMidBody';
+import { getAuth } from 'firebase/auth';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../components/AuthProvider';
 
 export default function ProfilePage() {
-  const [authToken, setAuthToken] = useLocalStorage('authToken', '');
+  const auth = getAuth();
   const navigate = useNavigate();
+  const {currentUser} = useContext(AuthContext);
 
-  //Check for auth token immediately upon component mount and whenever authToken changes
-  useEffect(() => {
-    if (!authToken || authToken.trim() === '') {
-      navigate('/login');
-    }
-  }, [authToken, navigate]);
+  if (!currentUser) {
+    navigate("/login")
+  }
 
   const handleLogout = () => {
-    setAuthToken(''); //Clear token from local storage
+    auth.signOut() //Clear token from local storage
   };
 
   return (

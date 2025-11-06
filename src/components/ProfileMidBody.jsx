@@ -11,24 +11,10 @@ export default function ProfileMidBody() {
     'https://pbs.twimg.com/profile_banners/83072625/1602845571/1500x500';
   const pic =
     'https://pbs.twimg.com/profile_images/1587405892437221376/h167Jlb2_400x400.jpg';
-  const BASE_URL = 'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev';
 
     const dispatch = useDispatch()
     const posts = useSelector(store => store.posts.posts)
     const loading =  useSelector(store => store.posts.loading)
-
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    // const token = 'jwfkbvkgrbjgbrvr.jndvcjbguirbgvneojnv"
-    if (token) {
-      //it token exists
-      const decodedToken = jwtDecode(token);
-      // const decodedToken = {id:6, username: 'me'}
-      const userId = decodedToken.id;
-      console.log(userId);
-      dispatch(fetchPostsByUser(userId));
-    }
-  }, [dispatch]);
 
   return (
     <Col sm={6} className="bg-light" style={{ border: '1px solid lightgrey' }}>
