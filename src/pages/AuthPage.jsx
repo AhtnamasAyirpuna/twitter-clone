@@ -1,6 +1,6 @@
 import { Col, Row, Image, Button, Modal, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/AuthProvider';
 
@@ -18,10 +18,67 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const auth = getAuth();
   const { currentUser } = useContext(AuthContext);
+  const [error, setError] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [showPhoneForm, setShowPhoneForm] = useState(false);
 
   useEffect(() => {
-    if (currentUser) navigate ("/profile");
+    if (currentUser) {
+      navigate ("/profile");
+      setError("");
+    }
   }, [currentUser, navigate]);
+
+  //Setup reCaptcha and send code..study!
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+        }
+      );
+    }
+  };
+
+  const handleSendCode = async(e) => {
+    e.preventDefault();
+    setupRecaptcha();
+    try{
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        phoneNumber,
+        window.recaptchaVerifier
+      );
+      setConfirmationResult(confirmation);
+      setError("");
+      alert("VErification code sent!");
+    } catch (error) {
+      setError("Failed to send code. Please check the phone number.");
+      console.error(error);
+    }
+  };
+
+  //Verify code and login
+  const handleVerifyCode = async(e) => {
+    e.preventDefault();
+    if (!confirmationResult) {
+      setError("Please send the code first.");
+      return;
+    }
+    try {
+      const result = await confirmationResult.confirm(verificationCode);
+      if (result.user) {
+        navigate("/profile")
+      }
+    } catch (error) {
+      setError("Invalid verification code");
+      console.error(error);
+    }
+  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -41,8 +98,13 @@ export default function AuthPage() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, username, password);
+      setError("")
     } catch (error) {
-      console.error(error);
+      if (error.code === 'auth/invalid-credential') {
+        setError('Invalid email or password');
+      } else {
+        setError('Something went wrong. Please try again')
+      }     
     }
   };
 
@@ -55,6 +117,8 @@ export default function AuthPage() {
       console.error(error);
     }
   };
+
+ 
 
   const handleClose = () => setModalShow(null);
 
@@ -83,6 +147,49 @@ export default function AuthPage() {
           <Button className="rounded-pill" variant="outline-dark">
             <i className="bi bi-apple"></i> Sign up with Apple
           </Button>
+          <Button className="rounded-pill" variant="outline-dark" onClick={() => setShowPhoneForm(!showPhoneForm)}>
+            <i className="bi bi-telephone-fill"></i> Sign up with Phone Number
+          </Button>
+
+        {showPhoneForm && (
+          <>
+            <Form className='d-flex mt-2' onSubmit={handleSendCode}>
+          <Form.Control 
+            type="tel"
+            placeholder="Enter phone number"
+            value={phoneNumber}
+            onChange={(e)=>setPhoneNumber(e.target.value)}
+            />
+            <Button
+              type="submit"
+              className='ms-2'
+              variant="outline-success">
+                Send Code
+            </Button>
+        </Form>
+        {/*Verification code field*/}
+        {confirmationResult && (
+          <Form className='d-flex mt-2' onSubmit={hendleVerifyCode}>
+            <Form.Control 
+              type="text"
+              placeholder="Enter verification code"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+            />
+            <Button
+              type="submit"
+              className='ms-2'
+              variant='outline-primary'>
+                Verify
+            </Button>
+          </Form>
+        )}
+
+          <div id="recaptcha-container"></div>
+          </>
+        )}
+        
+
           <p style={{ textAlign: 'center' }}>or</p>
           <Button className="rounded-pill" onClick={handleShowSignUp}>
             Create an account
@@ -145,9 +252,11 @@ export default function AuthPage() {
                 number, when provide, unless you choose otherwise here.
               </p>
 
+              {error && <p className='error-text'>{error}</p>}
               <Button className="rounded-pill" type="submit">
                 {modalShow === 'SignUp' ? 'Sign up' : 'Log in'}
               </Button>
+
             </Form>
           </Modal.Body>
         </Modal>
