@@ -19,7 +19,7 @@ export default function AuthPage() {
   const auth = getAuth();
   const { currentUser } = useContext(AuthContext);
   const [error, setError] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("+60");
   const [verificationCode, setVerificationCode] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [showPhoneForm, setShowPhoneForm] = useState(false);
@@ -35,14 +35,13 @@ export default function AuthPage() {
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
         "recaptcha-container",
-        {
-          size: "invisible",
-        }
+        { size: "invisible" }, 
+        auth 
       );
     }
-  };
+};
+
 
   const handleSendCode = async(e) => {
     e.preventDefault();
