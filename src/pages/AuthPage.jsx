@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/AuthProvider';
+import {auth} from "../firebase";
 
 export default function AuthPage() {
   const loginImage = 'https://sig1.co/img-twitter-1';
@@ -16,7 +17,7 @@ export default function AuthPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const auth = getAuth();
+  //const auth = getAuth();
   const { currentUser } = useContext(AuthContext);
   const [error, setError] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("+60");
@@ -35,14 +36,18 @@ export default function AuthPage() {
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
         "recaptcha-container",
-        { size: "invisible" }, 
-        auth 
+        { size: "invisible",
+          callback: (response) => {
+            console.log('reCAPTCHA solved:', response);
+          },
+        }
       );
     }
 };
 
-
+//send SMS code
   const handleSendCode = async(e) => {
     e.preventDefault();
     setupRecaptcha();
@@ -54,10 +59,9 @@ export default function AuthPage() {
       );
       setConfirmationResult(confirmation);
       setError("");
-      alert("VErification code sent!");
+      alert("Verification code sent!");
     } catch (error) {
-      setError("Failed to send code. Please check the phone number.");
-      console.error(error);
+      setError(error.message || "Failed to send code. Please check the phone number.");
     }
   };
 
@@ -70,12 +74,8 @@ export default function AuthPage() {
     }
     try {
       const result = await confirmationResult.confirm(verificationCode);
-      if (result.user) {
-        navigate("/profile")
-      }
     } catch (error) {
-      setError("Invalid verification code");
-      console.error(error);
+      setError(error.message || "Invalid verification code");
     }
   };
 
@@ -168,7 +168,7 @@ export default function AuthPage() {
         </Form>
         {/*Verification code field*/}
         {confirmationResult && (
-          <Form className='d-flex mt-2' onSubmit={hendleVerifyCode}>
+          <Form className='d-flex mt-2' onSubmit={handleVerifyCode}>
             <Form.Control 
               type="text"
               placeholder="Enter verification code"
