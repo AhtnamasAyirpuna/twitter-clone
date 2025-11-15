@@ -1,14 +1,11 @@
 import { Col, Row, Image, Button, Modal, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../components/AuthProvider';
-import {auth} from "../firebase";
 
 export default function AuthPage() {
   const loginImage = 'https://sig1.co/img-twitter-1';
-  const url =
-    'https://ebab9dbd-f5f1-417e-836d-58117ec988f6-00-236pt25bvhvxb.sisko.replit.dev'; //from auth back end API
 
   //Possible values: null (no modal shows), "Login", "Signup"
   const [modalShow, setModalShow] = useState(null);
@@ -17,67 +14,12 @@ export default function AuthPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  //const auth = getAuth();
+  const auth = getAuth();
   const { currentUser } = useContext(AuthContext);
-  const [error, setError] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("+60");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [showPhoneForm, setShowPhoneForm] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      navigate ("/profile");
-      setError("");
-    }
+    if (currentUser) navigate ("/profile");
   }, [currentUser, navigate]);
-
-  //Setup reCaptcha and send code..study!
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        { size: "invisible",
-          callback: (response) => {
-            console.log('reCAPTCHA solved:', response);
-          },
-        }
-      );
-    }
-};
-
-//send SMS code
-  const handleSendCode = async(e) => {
-    e.preventDefault();
-    setupRecaptcha();
-    try{
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        phoneNumber,
-        window.recaptchaVerifier
-      );
-      setConfirmationResult(confirmation);
-      setError("");
-      alert("Verification code sent!");
-    } catch (error) {
-      setError(error.message || "Failed to send code. Please check the phone number.");
-    }
-  };
-
-  //Verify code and login
-  const handleVerifyCode = async(e) => {
-    e.preventDefault();
-    if (!confirmationResult) {
-      setError("Please send the code first.");
-      return;
-    }
-    try {
-      const result = await confirmationResult.confirm(verificationCode);
-    } catch (error) {
-      setError(error.message || "Invalid verification code");
-    }
-  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -97,13 +39,8 @@ export default function AuthPage() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, username, password);
-      setError("")
     } catch (error) {
-      if (error.code === 'auth/invalid-credential') {
-        setError('Invalid email or password');
-      } else {
-        setError('Something went wrong. Please try again')
-      }     
+      console.error(error);
     }
   };
 
@@ -116,8 +53,6 @@ export default function AuthPage() {
       console.error(error);
     }
   };
-
- 
 
   const handleClose = () => setModalShow(null);
 
@@ -146,49 +81,6 @@ export default function AuthPage() {
           <Button className="rounded-pill" variant="outline-dark">
             <i className="bi bi-apple"></i> Sign up with Apple
           </Button>
-          <Button className="rounded-pill" variant="outline-dark" onClick={() => setShowPhoneForm(!showPhoneForm)}>
-            <i className="bi bi-telephone-fill"></i> Sign up with Phone Number
-          </Button>
-
-        {showPhoneForm && (
-          <>
-            <Form className='d-flex mt-2' onSubmit={handleSendCode}>
-          <Form.Control 
-            type="tel"
-            placeholder="Enter phone number"
-            value={phoneNumber}
-            onChange={(e)=>setPhoneNumber(e.target.value)}
-            />
-            <Button
-              type="submit"
-              className='ms-2'
-              variant="outline-success">
-                Send Code
-            </Button>
-        </Form>
-        {/*Verification code field*/}
-        {confirmationResult && (
-          <Form className='d-flex mt-2' onSubmit={handleVerifyCode}>
-            <Form.Control 
-              type="text"
-              placeholder="Enter verification code"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-            />
-            <Button
-              type="submit"
-              className='ms-2'
-              variant='outline-primary'>
-                Verify
-            </Button>
-          </Form>
-        )}
-
-          <div id="recaptcha-container"></div>
-          </>
-        )}
-        
-
           <p style={{ textAlign: 'center' }}>or</p>
           <Button className="rounded-pill" onClick={handleShowSignUp}>
             Create an account
@@ -251,11 +143,9 @@ export default function AuthPage() {
                 number, when provide, unless you choose otherwise here.
               </p>
 
-              {error && <p className='error-text'>{error}</p>}
               <Button className="rounded-pill" type="submit">
                 {modalShow === 'SignUp' ? 'Sign up' : 'Log in'}
               </Button>
-
             </Form>
           </Modal.Body>
         </Modal>
