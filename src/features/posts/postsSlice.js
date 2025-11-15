@@ -1,5 +1,5 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
-import {collection, doc, getDoc, getDocs, setDoc} from "firebase/frestore";
+import {collection, doc, getDoc, getDocs, setDoc} from "firebase/firestore";
 import {db} from "../../firebase";
 
 //Async thunk for fetching user's posts
