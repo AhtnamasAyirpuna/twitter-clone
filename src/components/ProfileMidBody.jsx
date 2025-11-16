@@ -1,10 +1,10 @@
 import { Button, Col, Image, Nav, Row, Spinner } from 'react-bootstrap';
 import ProfilePostCard from './ProfilePostCard';
-import { jwtDecode } from 'jwt-decode';
-import { useEffect } from 'react';
 import {useDispatch, useSelector} from "react-redux";
-import { fetchPostsByUser } from '../features/posts/postsSlice';
 import SearchBar from './SearchBar';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from './AuthProvider';
+import { fetchPostsByUser } from '../features/posts/postsSlice';
 
 export default function ProfileMidBody() {
   const url =
@@ -15,6 +15,11 @@ export default function ProfileMidBody() {
     const dispatch = useDispatch()
     const posts = useSelector(store => store.posts.posts)
     const loading =  useSelector(store => store.posts.loading)
+    const {currentUser} = useContext(AuthContext);
+    useEffect(() => {
+      if (!currentUser) return;
+      dispatch(fetchPostsByUser(currentUser.uid));
+    }, [dispatch, currentUser]);
 
   return (
     <Col sm={6} className="bg-light" style={{ border: '1px solid lightgrey' }}>
@@ -81,16 +86,9 @@ export default function ProfileMidBody() {
       {loading && (
         <Spinner animation="border" className='ms-3 mt-3' variant="primary" />
       )}
-      {/*posts = [{id: 4, content: 'sigma school'}] */}
-      {posts.length > 0 && posts.map((post) => (
-          //post = {id: 4, content: 'sigma school'}
-          <ProfilePostCard
-            key={post.id}
-            content={post.content}
-            postId={post.id}
-          />
-          //<ProfilePostCard key={4} content={sigma school}
-        ))}
+      {posts.map((post) => (
+        <ProfilePostCard key={post.id} post={post}/>
+      ))}
     </Col>
   );
 }

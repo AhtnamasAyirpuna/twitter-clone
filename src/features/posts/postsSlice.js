@@ -1,12 +1,13 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
-import {collection, doc, getDoc, getDocs, setDoc} from "firebase/firestore";
+import {collection, doc, getDoc, getDocs, setDoc, updateDoc} from "firebase/firestore";
 import {db} from "../../firebase";
 
 //Async thunk for fetching user's posts
 export const fetchPostsByUser = createAsyncThunk(
     "posts/fetchByUser",
-    async (userId) => {
+    async (userId, {dispatch}) => {
         try {
+            dispatch({ type: "posts/loading" });
             const postsRef = collection(db, `users/${userId}/posts`);
 
             const querySnapshot = await getDocs(postsRef);
@@ -25,7 +26,7 @@ export const fetchPostsByUser = createAsyncThunk(
 
 export const savePost = createAsyncThunk(
     "posts/savePost",
-    async (userId, postContent) => {
+    async ({userId, postContent}) => {
         try {
         const postsRef = collection(db, `users/${userId}/posts`);
         console.log(`users/${userId}/posts`);
@@ -60,7 +61,7 @@ export const likePost = createAsyncThunk(
                 const postData = docSnap.data();
                 const likes = [...postData.likes, userId];
 
-                await setDoc(postRef, {...postData, likes});
+                await updateDoc(postRef, {likes});
             }
 
             return {userId, postId};
@@ -83,7 +84,7 @@ export const removeLikeFromPost = createAsyncThunk(
                 const postData = docSnap.data();
                 const likes = postData.likes.filter((id) => id !== userId);
 
-                await setDoc(postRef, {...postData, likes});
+                await updateDoc(postRef, {likes});
             }
 
             return {userId, postId};
@@ -126,7 +127,11 @@ const postsSlice = createSlice({
                     (id) => id !== userId
                 );
             }
-        });
+        })
+        .addCase("posts/loading", (state) => {
+            state.loading = true;
+          });
+          
     },
 });
 
